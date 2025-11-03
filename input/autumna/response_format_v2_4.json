@@ -1,0 +1,1818 @@
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "autumna_care_home_extraction_v2_4_final",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "source_metadata": {
+          "type": "object",
+          "description": "Metadata about data source and extraction - maps to source_metadata JSONB",
+          "properties": {
+            "schema_version": {
+              "type": "string",
+              "description": "Schema version for this extraction",
+              "enum": [
+                "2.4"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "description": "Data source identifier",
+              "enum": [
+                "autumna"
+              ]
+            },
+            "source_url": {
+              "type": "string",
+              "description": "Original URL of scraped page"
+            },
+            "scraped_at": {
+              "type": "string",
+              "description": "ISO 8601 timestamp of scraping",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+            }
+          },
+          "required": [
+            "schema_version",
+            "source",
+            "source_url",
+            "scraped_at"
+          ],
+          "additionalProperties": false
+        },
+        "identity": {
+          "type": "object",
+          "description": "Basic identification - maps to flat fields: name, provider_name, cqc_location_id, brand_name",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Official care home name - maps to name field (REQUIRED)"
+            },
+            "provider_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Operating provider name - maps to provider_name field"
+            },
+            "provider_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Provider ID if available - maps to provider_id field",
+              "pattern": "^1-\\d{9}$"
+            },
+            "cqc_location_id": {
+              "type": "string",
+              "description": "CQC location ID (REQUIRED) - maps to cqc_location_id field (CRITICAL for deduplication and DB constraint)",
+              "pattern": "^1-\\d{10}$"
+            },
+            "brand_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Brand name if part of chain - maps to brand_name field"
+            },
+            "location_ods_code": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "ODS Location code if mentioned - maps to location_ods_code field"
+            },
+            "registered_manager": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "⚠️ NOTE: Name of CQC registered manager if mentioned. This field is extracted but NOT stored in БД v2.2 (field removed from schema). Extract for future compatibility."
+            }
+          },
+          "required": [
+            "name",
+            "cqc_location_id"
+          ],
+          "additionalProperties": false
+        },
+        "contact": {
+          "type": "object",
+          "description": "Contact information - maps to flat fields: telephone, email, website",
+          "properties": {
+            "telephone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Primary phone number - maps to telephone field"
+            },
+            "email": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Contact email - maps to email field"
+            },
+            "website": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Care home website - maps to website field"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "location": {
+          "type": "object",
+          "description": "Address and geographic data - maps to flat fields",
+          "properties": {
+            "address_line_1": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "⚠️ NOTE: Street address line 1. This field is extracted but NOT stored in БД v2.2 (field removed from schema). Extract for future compatibility."
+            },
+            "address_line_2": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "⚠️ NOTE: Street address line 2. This field is extracted but NOT stored in БД v2.2 (field removed from schema). Extract for future compatibility."
+            },
+            "city": {
+              "type": "string",
+              "description": "Town or city name (REQUIRED) - maps to city. Examples: 'Birmingham', 'London', 'Manchester'"
+            },
+            "county": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "County name - maps to county"
+            },
+            "region": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "UK region (e.g., West Midlands) - maps to region"
+            },
+            "postcode": {
+              "type": "string",
+              "description": "UK postcode (REQUIRED) - maps to postcode. Examples: 'SW1A 1AA', 'B12 3AB', 'M1 1AA'",
+              "pattern": "^[A-Z]{1,2}\\d{1,2}[A-Z]?\\s?\\d[A-Z]{2}$"
+            },
+            "latitude": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "GPS latitude - maps to latitude",
+              "minimum": 49,
+              "maximum": 61
+            },
+            "longitude": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "GPS longitude - maps to longitude",
+              "minimum": -8,
+              "maximum": 2
+            },
+            "local_authority": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Local authority name (e.g., Birmingham City Council) - maps to local_authority"
+            },
+            "location_context": {
+              "type": "object",
+              "description": "Additional location context - maps to location_context JSONB",
+              "properties": {
+                "nearby_amenities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "transport_links": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "local_area_description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": ["city", "postcode"],
+          "additionalProperties": false
+        },
+        "pricing": {
+          "type": "object",
+          "description": "⭐⭐⭐ HIGHEST PRIORITY: Weekly fees - maps to fee_*_from flat fields + pricing_details JSONB",
+          "properties": {
+            "fee_residential_from": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly residential care fee FROM (GBP) - maps to fee_residential_from",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "fee_residential_to": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly residential care fee TO (GBP) - stored in pricing_details JSONB",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "fee_nursing_from": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly nursing care fee FROM (GBP) - maps to fee_nursing_from",
+              "minimum": 0,
+              "maximum": 6000
+            },
+            "fee_nursing_to": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly nursing care fee TO (GBP) - stored in pricing_details JSONB",
+              "minimum": 0,
+              "maximum": 6000
+            },
+            "fee_dementia_from": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly dementia care fee FROM (GBP) - maps to fee_dementia_from",
+              "minimum": 0,
+              "maximum": 7000
+            },
+            "fee_dementia_to": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly dementia care fee TO (GBP) - stored in pricing_details JSONB",
+              "minimum": 0,
+              "maximum": 7000
+            },
+            "fee_respite_from": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly respite care fee FROM (GBP) - maps to fee_respite_from",
+              "minimum": 0,
+              "maximum": 4000
+            },
+            "fee_respite_to": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Weekly respite care fee TO (GBP) - stored in pricing_details JSONB",
+              "minimum": 0,
+              "maximum": 4000
+            },
+            "pricing_notes": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Additional pricing notes - stored in pricing_details JSONB",
+              "maxLength": 1000
+            },
+            "pricing_last_updated": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "When pricing was last updated - stored in pricing_details JSONB",
+              "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "care_services": {
+          "type": "object",
+          "description": "Care types and services - maps to care_* boolean fields + service_types JSONB",
+          "properties": {
+            "care_residential": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Residential care available - maps to care_residential"
+            },
+            "care_nursing": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Nursing care available - maps to care_nursing"
+            },
+            "care_dementia": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Dementia care available - maps to care_dementia"
+            },
+            "care_respite": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Respite care available - maps to care_respite"
+            },
+            "service_types_list": {
+              "type": "array",
+              "description": "List of CQC regulated services - maps to service_types JSONB with structure {services: [...]} Examples: 'Accommodation for persons who require nursing or personal care', 'Personal care', 'Dementia'",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "licenses": {
+          "type": "object",
+          "description": "🔴 CRITICAL: Official CQC regulated activities (LICENSES, not just services)",
+          "properties": {
+            "has_nursing_care_license": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "CQC registered for nursing care - maps to has_nursing_care_license"
+            },
+            "has_personal_care_license": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "CQC registered for personal care - maps to has_personal_care_license"
+            },
+            "has_surgical_procedures_license": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "CQC registered for surgical procedures - maps to has_surgical_procedures_license"
+            },
+            "has_treatment_license": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "CQC registered for treatment - maps to has_treatment_license"
+            },
+            "has_diagnostic_license": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "CQC registered for diagnostic procedures - maps to has_diagnostic_license"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "regulated_activities": {
+          "type": "object",
+          "description": "🆕 v2.2: All 14 CQC regulated activities in JSONB structure - maps to regulated_activities JSONB field (NEW v2.2 field, REQUIRED in БД v2.2)",
+          "properties": {
+            "activities": {
+              "type": "array",
+              "description": "Array of all CQC regulated activities",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "activity_id": {
+                    "type": "string",
+                    "description": "Short activity ID (e.g., 'nursing_care', 'personal_care')",
+                    "enum": [
+                      "nursing_care",
+                      "personal_care",
+                      "accommodation_nursing",
+                      "accommodation_treatment",
+                      "assessment_medical",
+                      "diagnostic_screening",
+                      "family_planning",
+                      "blood_management",
+                      "maternity_midwifery",
+                      "surgical_procedures",
+                      "termination_pregnancies",
+                      "transport_triage",
+                      "treatment_disease",
+                      "slimming_clinics"
+                    ]
+                  },
+                  "activity_name": {
+                    "type": "string",
+                    "description": "Full official name of the regulated activity"
+                  },
+                  "is_active": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ],
+                    "description": "Whether this activity is currently active/registered"
+                  }
+                },
+                "required": [
+                  "activity_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "activities"
+          ],
+          "additionalProperties": false
+        },
+        "user_categories": {
+          "type": "object",
+          "description": "Service user categories - DERIVE from medical_specialisms and service descriptions - maps to serves_* flat fields",
+          "properties": {
+            "serves_older_people": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Serves people 65+ (DERIVE from: dementia, Alzheimer's, Parkinson's mentions OR age bands 65+) - maps to serves_older_people"
+            },
+            "serves_younger_adults": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Serves adults 18-64 (DERIVE from: age bands 18-64 OR 'younger adults' mentions) - maps to serves_younger_adults"
+            },
+            "serves_mental_health": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Serves people with mental health conditions (DERIVE from: depression, anxiety, bipolar mentions) - maps to serves_mental_health"
+            },
+            "serves_physical_disabilities": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Serves people with physical disabilities (DERIVE from: wheelchair, mobility mentions) - maps to serves_physical_disabilities"
+            },
+            "serves_sensory_impairments": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Serves people with sensory impairments (DERIVE from: hearing, visual impairment mentions) - maps to serves_sensory_impairments"
+            },
+            "serves_dementia_band": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "🆕 v2.2: Serves people with dementia (DERIVE from: dementia care, memory care, Alzheimer's mentions OR explicit 'dementia' service user band) - maps to serves_dementia_band (NEW v2.2 field, REQUIRED in БД v2.2)"
+            },
+            "serves_children": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "🆕 v2.2: Serves children 0-18 years (DERIVE from: 'children', 'young people', age bands 0-17/0-18, 'children's care' mentions) - maps to serves_children (NEW v2.2 field, REQUIRED in БД v2.2)"
+            },
+            "serves_learning_disabilities": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "🆕 v2.2: Serves people with learning disabilities or autism (DERIVE from: 'learning disabilities', 'autism', 'ASD', 'intellectual disabilities' mentions) - maps to serves_learning_disabilities (NEW v2.2 field, REQUIRED in БД v2.2)"
+            },
+            "serves_detained_mha": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "🆕 v2.2: Serves people detained under Mental Health Act (DERIVE from: 'detained under MHA', 'Mental Health Act', 'secure provision', 'sectioned' mentions) - maps to serves_detained_mha (NEW v2.2 field, REQUIRED in БД v2.2)"
+            },
+            "serves_substance_misuse": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "🆕 v2.2: Serves people with substance misuse issues (DERIVE from: 'substance abuse', 'addiction support', 'alcohol dependency', 'drug rehabilitation' mentions) - maps to serves_substance_misuse (NEW v2.2 field, REQUIRED in БД v2.2)"
+            },
+            "serves_eating_disorders": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "🆕 v2.2: Serves people with eating disorders (DERIVE from: 'eating disorders', 'anorexia', 'bulimia', 'nutritional support' mentions) - maps to serves_eating_disorders (NEW v2.2 field, REQUIRED in БД v2.2)"
+            },
+            "serves_whole_population": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "🆕 v2.2: Serves whole population (DERIVE from: 'all ages', 'all conditions', 'general population', 'no specific restrictions' mentions) - maps to serves_whole_population (NEW v2.2 field, REQUIRED in БД v2.2)"
+            },
+            "service_user_bands_list": {
+              "type": "array",
+              "description": "List of service user bands with age ranges - maps to service_user_bands JSONB",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "band": {
+                    "type": "string"
+                  },
+                  "age_range": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "band"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "funding": {
+          "type": "object",
+          "description": "Funding options - maps to accepts_* boolean fields",
+          "properties": {
+            "accepts_self_funding": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Accepts self-funding - maps to accepts_self_funding"
+            },
+            "accepts_local_authority": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Accepts local authority funding - maps to accepts_local_authority"
+            },
+            "accepts_nhs_chc": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Accepts NHS Continuing Healthcare - maps to accepts_nhs_chc"
+            },
+            "accepts_third_party_topup": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Accepts third party top-up - maps to accepts_third_party_topup"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "capacity": {
+          "type": "object",
+          "description": "Capacity and operational info - maps to flat fields",
+          "properties": {
+            "beds_total": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Total number of beds - maps to beds_total",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "beds_available": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Available beds - maps to beds_available",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "has_availability": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Has current availability - maps to has_availability"
+            },
+            "year_opened": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Year care home opened - maps to year_opened",
+              "minimum": 1850,
+              "maximum": 2030
+            },
+            "year_registered": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Year registered with CQC - maps to year_registered",
+              "minimum": 1900,
+              "maximum": 2030
+            },
+            "availability_status": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Availability status text (e.g., 'Available', 'Full', 'Waiting list') - maps to availability_status"
+            },
+            "availability_last_checked": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "When availability was last checked (ISO 8601 timestamp) - maps to availability_last_checked",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "medical_specialisms": {
+          "type": "object",
+          "description": "HIERARCHICAL: Medical conditions and specialisms - DIRECT mapping to medical_specialisms JSONB",
+          "properties": {
+            "conditions_list": {
+              "type": "array",
+              "description": "List of all medical conditions supported",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "nursing_specialisms": {
+              "type": "object",
+              "description": "Specialist nursing care types",
+              "properties": {
+                "parkinsons": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "stroke": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "heart_disease": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "respiratory": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "diabetes": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "cancer_palliative": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "wound_care": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "catheter_care": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "peg_feeding": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "stoma_care": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tracheostomy": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "oxygen_therapy": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "dementia_specialisms": {
+              "type": "object",
+              "description": "Types of dementia supported",
+              "properties": {
+                "alzheimers": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "vascular_dementia": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "lewy_body": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "frontotemporal": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "dementia_behaviour": {
+              "type": "object",
+              "description": "Dementia behaviours managed",
+              "properties": {
+                "challenging_behaviour": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "wandering": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "aggression": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "sundowning": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "repetitive_behaviour": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "hoarding": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "sexual_disinhibition": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "disability_support": {
+              "type": "object",
+              "description": "Disability support types",
+              "properties": {
+                "wheelchair_users": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "visual_impairment": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "hearing_impairment": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "speech_impairment": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "learning_disabilities": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "autism": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "acquired_brain_injury": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "spinal_injury": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "medication_support": {
+              "type": "object",
+              "description": "Medication management types",
+              "properties": {
+                "medication_administration": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "medication_management": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "controlled_drugs": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "covert_medication": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "medication_review": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "special_support": {
+              "type": "object",
+              "description": "Specialized support types",
+              "properties": {
+                "end_of_life_care": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "palliative_care": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "terminal_care": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "bereavement_support": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "mental_health_support": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "dual_diagnosis": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "substance_misuse": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "eating_disorders": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "bariatric_care": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "young_onset_dementia": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "huntingtons": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "dietary_options": {
+          "type": "object",
+          "description": "HIERARCHICAL: Dietary options - DIRECT mapping to dietary_options JSONB",
+          "properties": {
+            "special_diets": {
+              "type": "object",
+              "description": "Special dietary requirements",
+              "properties": {
+                "vegetarian": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "vegan": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "halal": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "kosher": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "gluten_free": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "dairy_free": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "diabetic": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "low_sodium": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "pureed": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "fortified": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "meal_services": {
+              "type": "object",
+              "description": "Meal service features",
+              "properties": {
+                "choice_of_menu": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "fresh_cooked": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "chef_on_site": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "special_occasions": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "dining_room": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "food_standards": {
+              "type": "object",
+              "description": "Food quality and standards",
+              "properties": {
+                "food_hygiene_rating": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "nutritional_assessment": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "hydration_monitoring": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "building_and_facilities": {
+          "type": "object",
+          "description": "Building features and facilities - maps to flat boolean fields + building_info JSONB",
+          "properties": {
+            "wheelchair_access": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Wheelchair accessible - maps to wheelchair_access FLAT FIELD"
+            },
+            "ensuite_rooms": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Has ensuite rooms - maps to ensuite_rooms FLAT FIELD"
+            },
+            "secure_garden": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Secure garden available - maps to secure_garden FLAT FIELD"
+            },
+            "wifi_available": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "WiFi available - maps to wifi_available FLAT FIELD"
+            },
+            "parking_onsite": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "On-site parking - maps to parking_onsite FLAT FIELD"
+            },
+            "building_details": {
+              "type": "object",
+              "description": "Additional building information - maps to building_info JSONB",
+              "properties": {
+                "purpose_built": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "number_of_floors": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "number_of_rooms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "number_of_ensuite_rooms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "lift_available": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "infection_control": {
+                  "type": "object",
+                  "properties": {
+                    "air_filtration": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "sterilisation_devices": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "visitor_screening": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "staff_training": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "independent_assessments": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "other": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                },
+                "sustainability": {
+                  "type": "object",
+                  "properties": {
+                    "sustainability_badge": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "reduced_plastic_use": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "chp_system": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "other": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                },
+                "other_facilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "activities": {
+          "type": "object",
+          "description": "HIERARCHICAL: Activities - DIRECT mapping to activities JSONB",
+          "properties": {
+            "activities_list": {
+              "type": "array",
+              "description": "List of all activities offered",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "one_to_one_activities": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "One-to-one activities available"
+            },
+            "group_activities": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Group activities available"
+            },
+            "specific_activities": {
+              "type": "object",
+              "description": "Specific activity types",
+              "properties": {
+                "animal_petting": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "arts_crafts": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "bingo": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "exercise_class": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "gardening": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "music_therapy": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "religious_services": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "reminiscence": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "yoga": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "other": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "staff_information": {
+          "type": "object",
+          "description": "🆕 HIERARCHICAL: Staff info - maps to registered_manager flat field + staff_information JSONB",
+          "properties": {
+            "registered_manager": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "⚠️ NOTE: Name of registered manager. This field is extracted but NOT stored in БД v2.2 flat field (removed from schema). Can be stored in staff_information JSONB if needed."
+            },
+            "staff_ratio": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Staff to resident ratio if mentioned"
+            },
+            "nurse_on_duty": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Registered nurse on duty 24/7"
+            },
+            "specialist_staff": {
+              "type": "array",
+              "description": "Specialist staff types available",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "cqc_ratings": {
+          "type": "object",
+          "description": "🆕 CQC inspection ratings if mentioned on Autumna page - maps to cqc_rating_* flat fields",
+          "properties": {
+            "cqc_rating_overall": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Outstanding",
+                "Good",
+                "Requires improvement",
+                "Inadequate",
+                null
+              ],
+              "description": "Overall CQC rating - maps to cqc_rating_overall"
+            },
+            "cqc_rating_safe": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Outstanding",
+                "Good",
+                "Requires improvement",
+                "Inadequate",
+                null
+              ],
+              "description": "Safe rating - maps to cqc_rating_safe"
+            },
+            "cqc_rating_effective": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Outstanding",
+                "Good",
+                "Requires improvement",
+                "Inadequate",
+                null
+              ],
+              "description": "Effective rating - maps to cqc_rating_effective"
+            },
+            "cqc_rating_caring": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Outstanding",
+                "Good",
+                "Requires improvement",
+                "Inadequate",
+                null
+              ],
+              "description": "Caring rating - maps to cqc_rating_caring"
+            },
+            "cqc_rating_responsive": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Outstanding",
+                "Good",
+                "Requires improvement",
+                "Inadequate",
+                null
+              ],
+              "description": "Responsive rating - maps to cqc_rating_responsive"
+            },
+            "cqc_rating_well_led": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Outstanding",
+                "Good",
+                "Requires improvement",
+                "Inadequate",
+                null
+              ],
+              "description": "Well-led rating - maps to cqc_rating_well_led"
+            },
+            "cqc_last_inspection_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$",
+              "description": "Last inspection date (YYYY-MM-DD) - maps to cqc_last_inspection_date"
+            },
+            "cqc_publication_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$",
+              "description": "Report publication date (YYYY-MM-DD) - maps to cqc_publication_date"
+            },
+            "cqc_latest_report_url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "URL to CQC inspection report - maps to cqc_latest_report_url"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "reviews": {
+          "type": "object",
+          "description": "🆕 Review information if shown on Autumna page - maps to review_* flat fields + reviews_detailed JSONB",
+          "properties": {
+            "review_average_score": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 5,
+              "description": "Average review score (0-5 stars) - maps to review_average_score"
+            },
+            "review_count": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Total number of reviews - maps to review_count"
+            },
+            "google_rating": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 5,
+              "description": "Google rating if mentioned - maps to google_rating"
+            },
+            "review_summary": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 500,
+              "description": "Brief summary of reviews if available - stored in reviews_detailed JSONB"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "media": {
+          "type": "object",
+          "description": "🆕 Media content from Autumna page - maps to media JSONB",
+          "properties": {
+            "images": {
+              "type": "array",
+              "description": "URLs of images from the page",
+              "items": {
+                "type": "string"
+              }
+            },
+            "has_virtual_tour": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Virtual tour available"
+            },
+            "video_url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "URL to video tour if available"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "extraction_metadata": {
+          "type": "object",
+          "description": "Extraction quality and debugging information",
+          "properties": {
+            "extraction_confidence": {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ],
+              "description": "Overall confidence in extraction quality"
+            },
+            "critical_fields_found": {
+              "type": "array",
+              "description": "List of critical fields successfully extracted",
+              "items": {
+                "type": "string"
+              }
+            },
+            "critical_fields_missing": {
+              "type": "array",
+              "description": "List of critical fields that could not be extracted",
+              "items": {
+                "type": "string"
+              }
+            },
+            "sections_identified": {
+              "type": "array",
+              "description": "HTML sections successfully identified and processed",
+              "items": {
+                "type": "string"
+              }
+            },
+            "data_quality_notes": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Any notes about data quality or extraction issues",
+              "maxLength": 500
+            },
+            "data_quality_score": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Automated data quality score (0-100) based on field completeness - maps to data_quality_score"
+            },
+            "is_dormant": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Whether care home appears dormant/closed (NO pricing, old inspection, 'closed' mentions) - maps to is_dormant"
+            }
+          },
+          "required": [
+            "extraction_confidence"
+          ],
+          "additionalProperties": false
+        },
+        "accreditations": {
+          "type": "object",
+          "description": "Accreditations and certifications - maps to accreditations JSONB",
+          "properties": {
+            "accreditations_list": {
+              "type": "array",
+              "description": "List of accreditations (e.g., 'Investors in People', 'ISO 9001')",
+              "items": {
+                "type": "string"
+              }
+            },
+            "quality_marks": {
+              "type": "array",
+              "description": "Quality marks and awards (e.g., 'Dignity in Care', 'Dementia Friends')",
+              "items": {
+                "type": "string"
+              }
+            },
+            "certifications": {
+              "type": "array",
+              "description": "ISO certifications and other formal certifications",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "source_metadata",
+        "identity",
+        "contact",
+        "location",
+        "pricing",
+        "care_services",
+        "licenses",
+        "user_categories",
+        "funding",
+        "capacity",
+        "medical_specialisms",
+        "dietary_options",
+        "building_and_facilities",
+        "activities",
+        "staff_information",
+        "cqc_ratings",
+        "reviews",
+        "media",
+        "extraction_metadata",
+        "regulated_activities",
+        "accreditations"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

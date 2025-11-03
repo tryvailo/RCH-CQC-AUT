@@ -1,0 +1,10 @@
+VALIDATION REPORT: CQC → Care Homes v2.2
+Date: Fri Oct 31 15:19:48 GMT 2025
+
+Total Checks: 54
+Passed: 50
+Failed: 4
+Critical Failures: 3
+Score: 92%
+
+Status: FAILED
