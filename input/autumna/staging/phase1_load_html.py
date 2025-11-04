@@ -6,11 +6,18 @@
 
 Использование:
     python phase1_load_html.py --urls urls.txt --api-key FIRECRAWL_API_KEY
+    python phase1_load_html.py --urls urls.txt --api-key FIRECRAWL_API_KEY --api-version v2.5 --use-cache
 
 Требования:
     - Список URL в файле (по одному на строку)
     - Firecrawl API ключ
     - PostgreSQL подключение настроено в .env
+
+Firecrawl API v2.5:
+    - 🚀 Использует новый semantic index (40% запросов обслуживаются мгновенно)
+    - 🎯 Кастомный browser stack для максимального качества данных
+    - 📦 Поддержка "as of now" или "as of last known good copy" через useCache
+    - ⚡ Автоматическое определение способа рендеринга страницы
 """
 
 import os
@@ -28,7 +35,7 @@ import re
 load_dotenv()
 
 # Конфигурация
-FIRECRAWL_API_URL = "https://api.firecrawl.dev/v1/scrape"
+FIRECRAWL_BASE_URL = "https://api.firecrawl.dev"
 BATCH_SIZE = 50  # Размер батча для Firecrawl
 RETRY_DELAY = 5  # Секунд между попытками
 
@@ -52,14 +59,37 @@ def get_db_connection():
     )
 
 
-def scrape_urls_with_firecrawl(urls: List[str], api_key: str) -> List[Dict]:
+def scrape_urls_with_firecrawl(
+    urls: List[str], 
+    api_key: str, 
+    api_version: str = "v2.5",
+    use_cache: bool = False
+) -> List[Dict]:
     """
     Отправить URLs в Firecrawl API для скрапинга
+    
+    Args:
+        urls: Список URL для скрапинга
+        api_key: Firecrawl API ключ
+        api_version: Версия API ("v1", "v2", "v2.5"). По умолчанию v2.5
+        use_cache: Использовать semantic index cache (v2.5+) для ускорения и экономии
     
     Returns:
         List[Dict] с ключами: url, html_content, metadata, status
     """
     results = []
+    
+    # Определить endpoint в зависимости от версии
+    if api_version.startswith("v2"):
+        # v2.5 использует новый endpoint с semantic index
+        endpoint = f"{FIRECRAWL_BASE_URL}/v2/scrape/batch"
+    else:
+        # v1 - старая версия для обратной совместимости
+        endpoint = f"{FIRECRAWL_BASE_URL}/v1/scrape/batch"
+    
+    print(f"🌐 Используется Firecrawl API {api_version} (endpoint: {endpoint})")
+    if use_cache and api_version.startswith("v2"):
+        print("   ✅ Semantic index cache включен (экономия времени и средств)")
     
     # Firecrawl поддерживает batch запросы
     for i in range(0, len(urls), BATCH_SIZE):
@@ -67,17 +97,29 @@ def scrape_urls_with_firecrawl(urls: List[str], api_key: str) -> List[Dict]:
         print(f"📥 Обработка батча {i//BATCH_SIZE + 1}/{(len(urls)-1)//BATCH_SIZE + 1} ({len(batch)} URLs)...")
         
         try:
+            # Подготовить payload в зависимости от версии API
+            payload = {
+                "urls": batch,
+                "format": "html"
+            }
+            
+            # v2.5+ поддерживает дополнительные опции
+            if api_version.startswith("v2"):
+                payload.update({
+                    "useCache": use_cache,  # Использовать semantic index для ускорения
+                    # Другие опции v2.5 можно добавить здесь:
+                    # "timeout": 60000,  # таймаут в миллисекундах
+                    # "waitFor": 0,  # ожидание загрузки страницы
+                })
+            
             # Отправить запрос в Firecrawl
             response = requests.post(
-                f"{FIRECRAWL_API_URL}/batch",
+                endpoint,
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
                 },
-                json={
-                    "urls": batch,
-                    "format": "html"
-                },
+                json=payload,
                 timeout=300  # 5 минут на батч
             )
             
@@ -88,29 +130,42 @@ def scrape_urls_with_firecrawl(urls: List[str], api_key: str) -> List[Dict]:
                     results.append({
                         'url': url,
                         'html_content': None,
-                        'metadata': {'status': 'error', 'error': response.text},
+                        'metadata': {
+                            'status': 'error', 
+                            'error': response.text,
+                            'api_version': api_version
+                        },
                         'status': 'error'
                     })
                 continue
             
             data = response.json()
             
-            # Обработать результаты
-            for item in data.get('data', []):
+            # Обработать результаты (структура ответа может отличаться в v2.5)
+            results_data = data.get('data', data.get('results', []))
+            
+            for item in results_data:
+                # v2.5 может возвращать данные в разных форматах
+                content = item.get('content') or item.get('html') or item.get('markdown', '')
+                
                 results.append({
                     'url': item.get('url', ''),
-                    'html_content': item.get('content', ''),
+                    'html_content': content,
                     'metadata': {
-                        'status': item.get('status', 'unknown'),
+                        'status': item.get('status', 'success'),
                         'scraped_at': item.get('metadata', {}).get('timestamp', time.strftime('%Y-%m-%dT%H:%M:%SZ')),
                         'title': item.get('metadata', {}).get('title', ''),
+                        'api_version': api_version,
+                        'from_cache': item.get('metadata', {}).get('fromCache', False) if use_cache else None,
+                        'source': item.get('metadata', {}).get('source', 'unknown'),  # v2.5 может указывать источник
                     },
-                    'status': item.get('status', 'unknown')
+                    'status': item.get('status', 'success')
                 })
             
-            # Задержка между батчами
+            # Задержка между батчами (меньше для v2.5 с cache)
             if i + BATCH_SIZE < len(urls):
-                time.sleep(2)
+                delay = 1 if (use_cache and api_version.startswith("v2")) else 2
+                time.sleep(delay)
                 
         except Exception as e:
             print(f"❌ Ошибка при обработке батча: {e}")
@@ -119,7 +174,11 @@ def scrape_urls_with_firecrawl(urls: List[str], api_key: str) -> List[Dict]:
                 results.append({
                     'url': url,
                     'html_content': None,
-                    'metadata': {'status': 'error', 'error': str(e)},
+                    'metadata': {
+                        'status': 'error', 
+                        'error': str(e),
+                        'api_version': api_version
+                    },
                     'status': 'error'
                 })
     
@@ -206,9 +265,27 @@ def load_urls_from_file(filepath: str) -> List[str]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Фаза 1: Загрузка HTML из Firecrawl в staging')
+    parser = argparse.ArgumentParser(
+        description='Фаза 1: Загрузка HTML из Firecrawl в staging',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Примеры использования:
+  # Использовать v2.5 с semantic index cache (рекомендуется)
+  python phase1_load_html.py --urls urls.txt --api-key $FIRECRAWL_API_KEY --api-version v2.5 --use-cache
+  
+  # Использовать v2.5 без cache (свежие данные)
+  python phase1_load_html.py --urls urls.txt --api-key $FIRECRAWL_API_KEY --api-version v2.5
+  
+  # Использовать старую версию v1 (для обратной совместимости)
+  python phase1_load_html.py --urls urls.txt --api-key $FIRECRAWL_API_KEY --api-version v1
+        """
+    )
     parser.add_argument('--urls', required=True, help='Путь к файлу со списком URL')
     parser.add_argument('--api-key', required=True, help='Firecrawl API ключ')
+    parser.add_argument('--api-version', default='v2.5', choices=['v1', 'v2', 'v2.5'], 
+                       help='Версия Firecrawl API (по умолчанию: v2.5)')
+    parser.add_argument('--use-cache', action='store_true', 
+                       help='Использовать semantic index cache (v2.5+). Ускоряет запросы и экономит средства')
     parser.add_argument('--dry-run', action='store_true', help='Тестовый запуск без сохранения')
     
     args = parser.parse_args()
@@ -220,6 +297,9 @@ def main():
     
     if args.dry_run:
         print("🧪 DRY RUN - URLs не будут отправлены в Firecrawl")
+        print(f"\nКонфигурация:")
+        print(f"  - API версия: {args.api_version}")
+        print(f"  - Использовать cache: {args.use_cache}")
         print("\nПервые 5 URLs:")
         for url in urls[:5]:
             print(f"  - {url}")
@@ -232,7 +312,12 @@ def main():
     
     # Скрапить через Firecrawl
     print("\n🚀 Запуск Firecrawl скрапинга...")
-    results = scrape_urls_with_firecrawl(urls, args.api_key)
+    results = scrape_urls_with_firecrawl(
+        urls, 
+        args.api_key, 
+        api_version=args.api_version,
+        use_cache=args.use_cache
+    )
     
     # Сохранить в staging
     print("\n💾 Сохранение в staging таблицу...")
@@ -241,6 +326,12 @@ def main():
     conn.close()
     
     print(f"\n✅ Завершено! Успешно: {success}, Ошибок: {errors}")
+    
+    # Показать статистику по cache (если использовался)
+    if args.use_cache:
+        cache_hits = sum(1 for r in results if r.get('metadata', {}).get('from_cache'))
+        if cache_hits > 0:
+            print(f"\n💡 Semantic index cache использован для {cache_hits} из {len(results)} запросов")
 
 
 if __name__ == '__main__':
