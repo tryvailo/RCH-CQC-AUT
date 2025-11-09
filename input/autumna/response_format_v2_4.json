@@ -2,7 +2,7 @@
   "type": "json_schema",
   "json_schema": {
     "name": "autumna_care_home_extraction_v2_4_final",
-    "strict": true,
+    "strict": false,
     "schema": {
       "type": "object",
       "properties": {
@@ -55,7 +55,8 @@
                 "string",
                 "null"
               ],
-              "description": "Operating provider name - maps to provider_name field"
+              "description": "Operating provider name - maps to provider_name field",
+              "default": null
             },
             "provider_id": {
               "type": [
@@ -63,7 +64,8 @@
                 "null"
               ],
               "description": "Provider ID if available - maps to provider_id field",
-              "pattern": "^1-\\d{9}$"
+              "pattern": "^1-\\d{9}$",
+              "default": null
             },
             "cqc_location_id": {
               "type": "string",
@@ -75,21 +77,24 @@
                 "string",
                 "null"
               ],
-              "description": "Brand name if part of chain - maps to brand_name field"
+              "description": "Brand name if part of chain - maps to brand_name field",
+              "default": null
             },
             "location_ods_code": {
               "type": [
                 "string",
                 "null"
               ],
-              "description": "ODS Location code if mentioned - maps to location_ods_code field"
+              "description": "ODS Location code if mentioned - maps to location_ods_code field",
+              "default": null
             },
             "registered_manager": {
               "type": [
                 "string",
                 "null"
               ],
-              "description": "⚠️ NOTE: Name of CQC registered manager if mentioned. This field is extracted but NOT stored in БД v2.2 (field removed from schema). Extract for future compatibility."
+              "description": "⚠️ NOTE: Name of CQC registered manager if mentioned. This field is extracted but NOT stored in БД v2.2 (field removed from schema). Extract for future compatibility.",
+              "default": null
             }
           },
           "required": [

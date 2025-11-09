@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ФАЗА 1: Загрузка HTML из Firecrawl в staging таблицу
+ФАЗА 1: Загрузка Markdown из Firecrawl в staging таблицу
 ================================================================
-Цель: Сохранить HTML всех страниц Autumna в staging таблицу один раз
+Цель: Сохранить Markdown всех страниц Autumna в staging таблицу один раз
 
 Использование:
     python phase1_load_html.py --urls urls.txt --api-key FIRECRAWL_API_KEY
@@ -75,7 +75,7 @@ def scrape_urls_with_firecrawl(
         use_cache: Использовать semantic index cache (v2.5+) для ускорения и экономии
     
     Returns:
-        List[Dict] с ключами: url, html_content, metadata, status
+        List[Dict] с ключами: url, markdown_content, metadata, status
     """
     results = []
     
@@ -100,7 +100,7 @@ def scrape_urls_with_firecrawl(
             # Подготовить payload в зависимости от версии API
             payload = {
                 "urls": batch,
-                "format": "html"
+                "format": "markdown"  # Используем markdown вместо HTML для экономии токенов
             }
             
             # v2.5+ поддерживает дополнительные опции
@@ -129,7 +129,7 @@ def scrape_urls_with_firecrawl(
                 for url in batch:
                     results.append({
                         'url': url,
-                        'html_content': None,
+                        'markdown_content': None,
                         'metadata': {
                             'status': 'error', 
                             'error': response.text,
@@ -146,11 +146,12 @@ def scrape_urls_with_firecrawl(
             
             for item in results_data:
                 # v2.5 может возвращать данные в разных форматах
-                content = item.get('content') or item.get('html') or item.get('markdown', '')
+                # Приоритет: markdown > content > html (для обратной совместимости)
+                content = item.get('markdown') or item.get('content') or item.get('html', '')
                 
                 results.append({
                     'url': item.get('url', ''),
-                    'html_content': content,
+                    'markdown_content': content,  # Сохраняем как markdown_content
                     'metadata': {
                         'status': item.get('status', 'success'),
                         'scraped_at': item.get('metadata', {}).get('timestamp', time.strftime('%Y-%m-%dT%H:%M:%SZ')),
@@ -173,7 +174,7 @@ def scrape_urls_with_firecrawl(
             for url in batch:
                 results.append({
                     'url': url,
-                    'html_content': None,
+                    'markdown_content': None,
                     'metadata': {
                         'status': 'error', 
                         'error': str(e),
@@ -196,12 +197,12 @@ def save_to_staging(conn, results: List[Dict]):
     for result in results:
         url = result['url']
         cqc_id = extract_cqc_id_from_url(url)
-        html_content = result.get('html_content')
+        markdown_content = result.get('markdown_content')
         metadata = result.get('metadata', {})
         status = result.get('status', 'unknown')
         
-        if not html_content:
-            print(f"⚠️  Пропущено (нет HTML): {url}")
+        if not markdown_content:
+            print(f"⚠️  Пропущено (нет Markdown): {url}")
             error_count += 1
             continue
         
@@ -211,18 +212,18 @@ def save_to_staging(conn, results: List[Dict]):
                     source_url,
                     cqc_location_id,
                     scraped_at,
-                    html_content,
+                    markdown_content,
                     firecrawl_metadata
                 ) VALUES (
                     %(url)s,
                     %(cqc_id)s,
                     CURRENT_TIMESTAMP,
-                    %(html_content)s,
+                    %(markdown_content)s,
                     %(metadata)s::jsonb
                 )
                 ON CONFLICT (source_url) DO UPDATE
                 SET 
-                    html_content = EXCLUDED.html_content,
+                    markdown_content = EXCLUDED.markdown_content,
                     firecrawl_metadata = EXCLUDED.firecrawl_metadata,
                     scraped_at = EXCLUDED.scraped_at,
                     updated_at = CURRENT_TIMESTAMP
@@ -230,7 +231,7 @@ def save_to_staging(conn, results: List[Dict]):
             """, {
                 'url': url,
                 'cqc_id': cqc_id,
-                'html_content': html_content,
+                'markdown_content': markdown_content,
                 'metadata': json.dumps(metadata)
             })
             
@@ -266,7 +267,7 @@ def load_urls_from_file(filepath: str) -> List[str]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Фаза 1: Загрузка HTML из Firecrawl в staging',
+        description='Фаза 1: Загрузка Markdown из Firecrawl в staging',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Примеры использования:

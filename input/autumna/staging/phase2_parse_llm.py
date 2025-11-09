@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ФАЗА 2: Парсинг HTML через OpenAI LLM
+ФАЗА 2: Парсинг Markdown через OpenAI LLM
 ================================================================
-Цель: Извлечь структурированные данные из HTML с помощью ChatGPT
+Цель: Извлечь структурированные данные из Markdown с помощью ChatGPT
 
 Использование:
     python phase2_parse_llm.py --prompt-version v2.4 --batch-size 25
@@ -10,7 +10,7 @@
 Требования:
     - OpenAI API ключ в .env
     - PostgreSQL подключение настроено
-    - HTML уже загружен в staging таблицу (Фаза 1)
+    - Markdown уже загружен в staging таблицу (Фаза 1)
 """
 
 import os
@@ -54,8 +54,21 @@ def get_db_connection():
 
 def load_prompt_and_schema(prompt_version: str) -> tuple:
     """Загрузить промпт и JSON Schema для указанной версии"""
-    prompt_file = f"input/autumna/AUTUMNA_PARSING_PROMPT_v2_4.md"
-    schema_file = f"input/autumna/response_format_v2_4.json"
+    # Поддержка версий промптов
+    if prompt_version == 'v2.6' or prompt_version == 'v2.6-final':
+        # v2.6 FINAL - используем Markdown промпт по умолчанию
+        prompt_file = f"input/autumna/autumna_markdown_prompt_v26.md"
+        schema_file = f"input/autumna/response_format_v26_final.json"
+    elif prompt_version == 'v2.6-html':
+        # v2.6 HTML версия
+        prompt_file = f"input/autumna/autumna_html_prompt_v26.md"
+        schema_file = f"input/autumna/response_format_v26_final.json"
+    elif prompt_version == 'v2.5' or prompt_version == 'v2.5-optimized':
+        prompt_file = f"input/autumna/AUTUMNA_PARSING_PROMPT_v2_5_OPTIMIZED.md"
+        schema_file = f"input/autumna/response_format_v2_4.json"
+    else:
+        prompt_file = f"input/autumna/AUTUMNA_PARSING_PROMPT_v2_4.md"
+        schema_file = f"input/autumna/response_format_v2_4.json"
     
     if not os.path.exists(prompt_file):
         raise FileNotFoundError(f"Промпт не найден: {prompt_file}")
@@ -71,14 +84,14 @@ def load_prompt_and_schema(prompt_version: str) -> tuple:
     return system_prompt, response_format
 
 
-def parse_html_with_openai(client: OpenAI, html_content: str, system_prompt: str, response_format: dict) -> Dict:
-    """Парсинг HTML через OpenAI API"""
+def parse_markdown_with_openai(client: OpenAI, markdown_content: str, system_prompt: str, response_format: dict) -> Dict:
+    """Парсинг Markdown через OpenAI API"""
     try:
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Parse this HTML page:\n\n{html_content}"}
+                {"role": "user", "content": f"Parse this markdown page:\n\n{markdown_content}"}
             ],
             response_format={"type": "json_schema", "json_schema": response_format['json_schema']},
             temperature=0
@@ -162,18 +175,18 @@ def get_unparsed_records(conn, batch_size: int, needs_reparse: bool = False) -> 
     
     if needs_reparse:
         cursor.execute("""
-            SELECT id, html_content, source_url, cqc_location_id
+            SELECT id, markdown_content, source_url, cqc_location_id
             FROM autumna_staging
-            WHERE html_content IS NOT NULL
+            WHERE markdown_content IS NOT NULL
               AND needs_reparse = TRUE
             ORDER BY created_at ASC
             LIMIT %(batch_size)s
         """, {'batch_size': batch_size})
     else:
         cursor.execute("""
-            SELECT id, html_content, source_url, cqc_location_id
+            SELECT id, markdown_content, source_url, cqc_location_id
             FROM autumna_staging
-            WHERE html_content IS NOT NULL
+            WHERE markdown_content IS NOT NULL
               AND parsed_json IS NULL
             ORDER BY created_at ASC
             LIMIT %(batch_size)s
@@ -192,12 +205,12 @@ def process_batch(conn, client: OpenAI, records: List[Dict], system_prompt: str,
     for record in records:
         staging_id = record['id']
         url = record['source_url']
-        html_content = record['html_content']
+        markdown_content = record['markdown_content']
         
         logger.info(f"📄 Парсинг: {url} (ID: {staging_id})")
         
         # Парсинг через OpenAI
-        result = parse_html_with_openai(client, html_content, system_prompt, response_format)
+        result = parse_markdown_with_openai(client, markdown_content, system_prompt, response_format)
         
         if not result['success']:
             logger.error(f"❌ Ошибка парсинга {url}: {result.get('error')}")
@@ -223,8 +236,8 @@ def process_batch(conn, client: OpenAI, records: List[Dict], system_prompt: str,
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Фаза 2: Парсинг HTML через OpenAI LLM')
-    parser.add_argument('--prompt-version', default='v2.4', help='Версия промпта (например, v2.4)')
+    parser = argparse.ArgumentParser(description='Фаза 2: Парсинг Markdown через OpenAI LLM')
+    parser.add_argument('--prompt-version', default='v2.6', help='Версия промпта (v2.4, v2.5, v2.5-optimized, v2.6, v2.6-final, v2.6-html)')
     parser.add_argument('--batch-size', type=int, default=DEFAULT_BATCH_SIZE, help='Размер батча')
     parser.add_argument('--reparse', action='store_true', help='Переобработать записи с needs_reparse=TRUE')
     parser.add_argument('--dry-run', action='store_true', help='Тестовый запуск без сохранения')
