@@ -42,6 +42,8 @@ wheels/
 *.xls
 *.json
 !input/autumna/response_format_v2_4.json
+!input/autumna/response_format_v26_final.json
+!input/autumna/response_format_v3_1_optimized_non_cqc.json
 !**/package.json
 !**/package-lock.json
 

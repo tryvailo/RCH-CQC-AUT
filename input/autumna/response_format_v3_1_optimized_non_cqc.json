@@ -1,0 +1,686 @@
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "autumna_care_home_extraction_v3_1_optimized_non_cqc",
+    "strict": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "source_metadata": {
+          "type": "object",
+          "description": "Extraction metadata - maps to source_metadata JSONB",
+          "properties": {
+            "schema_version": {
+              "type": "string",
+              "description": "Schema version (MUST be 3.1)",
+              "enum": ["3.1"]
+            },
+            "source": {
+              "type": "string",
+              "description": "Data source identifier",
+              "enum": ["autumna"]
+            },
+            "source_url": {
+              "type": "string",
+              "description": "Original page URL"
+            },
+            "scraped_at": {
+              "type": "string",
+              "description": "ISO 8601 timestamp",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+            },
+            "input_format": {
+              "type": "string",
+              "description": "Input format: html (more complete) or markdown (some fields missing)",
+              "enum": ["html", "markdown"]
+            }
+          },
+          "required": ["schema_version", "source", "source_url", "scraped_at", "input_format"],
+          "additionalProperties": false
+        },
+        "identity": {
+          "type": "object",
+          "description": "Basic identification - maps to flat fields",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "REQUIRED: Care home name (from H1, page title)"
+            },
+            "provider_name": {
+              "type": ["string", "null"],
+              "description": "Brand/owner name. Priority: brand links > FAQ 'owned by' > service provider. Example: 'Pearlcare'",
+              "default": null
+            },
+            "provider_id": {
+              "type": ["string", "null"],
+              "description": "Provider CQC ID if available. Pattern: 1-XXXXXXXXX",
+              "pattern": "^1-\\d{9}$",
+              "default": null
+            },
+            "cqc_location_id": {
+              "type": "string",
+              "description": "REQUIRED: CQC Location ID. HTML: data-attrs, links. Markdown: [Historic Reports](url). Pattern: 1-XXXXXXXXXX",
+              "pattern": "^1-\\d{10}$"
+            },
+            "brand_name": {
+              "type": ["string", "null"],
+              "description": "Brand name if part of chain (can be same as provider_name)",
+              "default": null
+            },
+            "location_ods_code": {
+              "type": ["string", "null"],
+              "description": "ODS code if mentioned",
+              "default": null
+            },
+            "registered_manager": {
+              "type": ["string", "null"],
+              "description": "NOTE: Extracted but NOT stored in DB v2.2 (field removed). Keep for compatibility.",
+              "default": null
+            }
+          },
+          "required": ["name", "cqc_location_id"],
+          "additionalProperties": false
+        },
+        "contact": {
+          "type": "object",
+          "description": "Contact info - maps to flat fields",
+          "properties": {
+            "telephone": {
+              "type": ["string", "null"],
+              "description": "Primary phone (for validation - CQC has this but may be outdated)"
+            },
+            "email": {
+              "type": ["string", "null"],
+              "description": "Contact email - NOT IN CQC!"
+            },
+            "website": {
+              "type": ["string", "null"],
+              "description": "Care home website (for validation - CQC has limited coverage)"
+            }
+          },
+          "additionalProperties": false
+        },
+        "location": {
+          "type": "object",
+          "description": "Address and geo - maps to flat fields",
+          "properties": {
+            "address_line_1": {
+              "type": ["string", "null"],
+              "description": "NOTE: Not stored in DB v2.2"
+            },
+            "address_line_2": {
+              "type": ["string", "null"],
+              "description": "NOTE: Not stored in DB v2.2"
+            },
+            "city": {
+              "type": "string",
+              "description": "REQUIRED: City/town. Examples: 'Birmingham', 'Manchester'"
+            },
+            "county": {
+              "type": ["string", "null"],
+              "description": "County name. Example: 'West Midlands'"
+            },
+            "region": {
+              "type": ["string", "null"],
+              "description": "UK region. Example: 'North West'"
+            },
+            "postcode": {
+              "type": "string",
+              "description": "REQUIRED: UK postcode. Example: 'B12 3AB'",
+              "pattern": "^[A-Z]{1,2}\\d{1,2}[A-Z]?\\s?\\d[A-Z]{2}$"
+            },
+            "latitude": {
+              "type": ["number", "null"],
+              "description": "HTML: data-lat attribute. Markdown: typically null (expected). NOTE: CQC has this but Autumna may be more accurate.",
+              "minimum": 49,
+              "maximum": 61
+            },
+            "longitude": {
+              "type": ["number", "null"],
+              "description": "HTML: data-lng attribute. Markdown: typically null (expected). NOTE: CQC has this but Autumna may be more accurate.",
+              "minimum": -8,
+              "maximum": 2
+            },
+            "local_authority": {
+              "type": ["string", "null"],
+              "description": "Council name. Example: 'Birmingham City Council'"
+            },
+            "location_context": {
+              "type": "object",
+              "description": "Additional context - maps to location_context JSONB - NOT IN CQC",
+              "properties": {
+                "nearby_amenities": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "transport_links": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "local_area_description": {
+                  "type": ["string", "null"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["city", "postcode"],
+          "additionalProperties": false
+        },
+        "capacity": {
+          "type": "object",
+          "description": "Capacity info - maps to flat fields",
+          "properties": {
+            "beds_total": {
+              "type": ["integer", "null"],
+              "description": "Total beds. HTML: tables. Markdown: FAQ 'X rooms' (rooms=beds in care homes). NOTE: CQC has this but Autumna may be more accurate.",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "beds_available": {
+              "type": ["integer", "null"],
+              "description": "Currently available - NOT IN CQC! Validation: must be <= beds_total (checked in post-processing)",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "has_availability": {
+              "type": ["boolean", "null"],
+              "description": "Current availability flag - NOT IN CQC!"
+            },
+            "year_opened": {
+              "type": ["integer", "null"],
+              "description": "CRITICAL: Year home STARTED operating. From 'Opened in', 'Established in'. NOT from Registration Date! NOT IN CQC!",
+              "minimum": 1850,
+              "maximum": 2030
+            },
+            "year_registered": {
+              "type": ["integer", "null"],
+              "description": "Year CQC registered. From 'Registration Date' table. Validation: must be >= year_opened if both present (checked in post-processing). NOTE: CQC has this but Autumna may have updates.",
+              "minimum": 1900,
+              "maximum": 2030
+            },
+            "availability_status": {
+              "type": ["string", "null"],
+              "description": "Status text - NOT IN CQC! Normalize: 'Yes'→'Available', 'No'→'Not available'. Examples: 'Available', 'Full', 'Waiting list'"
+            },
+            "availability_last_checked": {
+              "type": ["string", "null"],
+              "description": "Last check timestamp (ISO 8601) - NOT IN CQC!",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "care_services": {
+          "type": "object",
+          "description": "Care types - maps to care_* flat fields + service_types JSONB. NOTE: For validation only - CQC has authoritative data.",
+          "properties": {
+            "care_residential": {
+              "type": ["boolean", "null"],
+              "description": "Residential care available (without nursing)"
+            },
+            "care_nursing": {
+              "type": ["boolean", "null"],
+              "description": "Nursing care available (with RGNs)"
+            },
+            "care_dementia": {
+              "type": ["boolean", "null"],
+              "description": "SPECIALIZES in dementia care. NOTE: Different from serves_dementia_band (who they accept)"
+            },
+            "care_respite": {
+              "type": ["boolean", "null"],
+              "description": "Short-term respite care"
+            },
+            "service_types_list": {
+              "type": "array",
+              "description": "CQC service types. HTML: detailed from tables. Markdown: simplified from Care Category. Examples: 'Residential care', 'Respite care'. NOTE: For validation only - CQC has authoritative data.",
+              "items": {"type": "string"}
+            }
+          },
+          "additionalProperties": false
+        },
+        "pricing": {
+          "type": "object",
+          "description": "Weekly fees (GBP) - maps to fee_*_from flat fields + pricing_details JSONB - NOT IN CQC!",
+          "properties": {
+            "fee_residential_from": {
+              "type": ["number", "null"],
+              "description": "Weekly residential FROM (£). Validation: must be <= fee_residential_to (post-processing)",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "fee_residential_to": {
+              "type": ["number", "null"],
+              "description": "Weekly residential TO (£)",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "fee_nursing_from": {
+              "type": ["number", "null"],
+              "description": "Weekly nursing FROM (£)",
+              "minimum": 0,
+              "maximum": 6000
+            },
+            "fee_nursing_to": {
+              "type": ["number", "null"],
+              "description": "Weekly nursing TO (£)",
+              "minimum": 0,
+              "maximum": 6000
+            },
+            "fee_dementia_from": {
+              "type": ["number", "null"],
+              "description": "Weekly dementia FROM (£)",
+              "minimum": 0,
+              "maximum": 7000
+            },
+            "fee_dementia_to": {
+              "type": ["number", "null"],
+              "description": "Weekly dementia TO (£)",
+              "minimum": 0,
+              "maximum": 7000
+            },
+            "fee_respite_from": {
+              "type": ["number", "null"],
+              "description": "Weekly respite FROM (£)",
+              "minimum": 0,
+              "maximum": 4000
+            },
+            "fee_respite_to": {
+              "type": ["number", "null"],
+              "description": "Weekly respite TO (£)",
+              "minimum": 0,
+              "maximum": 4000
+            },
+            "pricing_notes": {
+              "type": ["string", "null"],
+              "description": "Additional notes (e.g., 'Excludes hairdressing')",
+              "maxLength": 1000
+            },
+            "pricing_last_updated": {
+              "type": ["string", "null"],
+              "description": "Date last updated: YYYY-MM-DD",
+              "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "funding": {
+          "type": "object",
+          "description": "Funding options - maps to accepts_* flat fields - NOT IN CQC!",
+          "properties": {
+            "accepts_self_funding": {
+              "type": ["boolean", "null"],
+              "description": "Accepts private/self-funding"
+            },
+            "accepts_local_authority": {
+              "type": ["boolean", "null"],
+              "description": "Accepts Local Authority funding"
+            },
+            "accepts_nhs_chc": {
+              "type": ["boolean", "null"],
+              "description": "Accepts NHS Continuing Healthcare"
+            },
+            "accepts_third_party_topup": {
+              "type": ["boolean", "null"],
+              "description": "Accepts third-party top-up payments"
+            }
+          },
+          "additionalProperties": false
+        },
+        "medical_specialisms": {
+          "type": "object",
+          "description": "Medical conditions - maps to medical_specialisms JSONB (hierarchical structure) - NOT IN CQC!",
+          "properties": {
+            "conditions_list": {
+              "type": "array",
+              "description": "All conditions supported",
+              "items": {"type": "string"},
+              "uniqueItems": true
+            },
+            "nursing_specialisms": {
+              "type": "object",
+              "description": "Specialist nursing types",
+              "properties": {
+                "parkinsons": {"type": ["boolean", "null"]},
+                "stroke": {"type": ["boolean", "null"]},
+                "heart_disease": {"type": ["boolean", "null"]},
+                "respiratory": {"type": ["boolean", "null"]},
+                "diabetes": {"type": ["boolean", "null"]},
+                "cancer_palliative": {"type": ["boolean", "null"]},
+                "wound_care": {"type": ["boolean", "null"]},
+                "catheter_care": {"type": ["boolean", "null"]},
+                "peg_feeding": {"type": ["boolean", "null"]},
+                "stoma_care": {"type": ["boolean", "null"]},
+                "tracheostomy": {"type": ["boolean", "null"]},
+                "oxygen_therapy": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            },
+            "dementia_specialisms": {
+              "type": "object",
+              "properties": {
+                "alzheimers": {"type": ["boolean", "null"]},
+                "vascular_dementia": {"type": ["boolean", "null"]},
+                "lewy_body": {"type": ["boolean", "null"]},
+                "frontotemporal": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            },
+            "dementia_behaviour": {
+              "type": "object",
+              "properties": {
+                "challenging_behaviour": {"type": ["boolean", "null"]},
+                "wandering": {"type": ["boolean", "null"]},
+                "aggression": {"type": ["boolean", "null"]},
+                "sundowning": {"type": ["boolean", "null"]},
+                "repetitive_behaviour": {"type": ["boolean", "null"]},
+                "hoarding": {"type": ["boolean", "null"]},
+                "sexual_disinhibition": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            },
+            "disability_support": {
+              "type": "object",
+              "properties": {
+                "wheelchair_users": {"type": ["boolean", "null"]},
+                "visual_impairment": {"type": ["boolean", "null"]},
+                "hearing_impairment": {"type": ["boolean", "null"]},
+                "speech_impairment": {"type": ["boolean", "null"]},
+                "learning_disabilities": {"type": ["boolean", "null"]},
+                "autism": {"type": ["boolean", "null"]},
+                "acquired_brain_injury": {"type": ["boolean", "null"]},
+                "spinal_injury": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            },
+            "medication_support": {
+              "type": "object",
+              "properties": {
+                "medication_administration": {"type": ["boolean", "null"]},
+                "medication_management": {"type": ["boolean", "null"]},
+                "controlled_drugs": {"type": ["boolean", "null"]},
+                "covert_medication": {"type": ["boolean", "null"]},
+                "medication_review": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            },
+            "special_support": {
+              "type": "object",
+              "properties": {
+                "end_of_life_care": {"type": ["boolean", "null"]},
+                "palliative_care": {"type": ["boolean", "null"]},
+                "terminal_care": {"type": ["boolean", "null"]},
+                "bereavement_support": {"type": ["boolean", "null"]},
+                "mental_health_support": {"type": ["boolean", "null"]},
+                "dual_diagnosis": {"type": ["boolean", "null"]},
+                "substance_misuse": {"type": ["boolean", "null"]},
+                "eating_disorders": {"type": ["boolean", "null"]},
+                "bariatric_care": {"type": ["boolean", "null"]},
+                "young_onset_dementia": {"type": ["boolean", "null"]},
+                "huntingtons": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "dietary_options": {
+          "type": "object",
+          "description": "Dietary options - maps to dietary_options JSONB (hierarchical) - NOT IN CQC!",
+          "properties": {
+            "special_diets": {
+              "type": "object",
+              "properties": {
+                "vegetarian": {"type": ["boolean", "null"]},
+                "vegan": {"type": ["boolean", "null"]},
+                "halal": {"type": ["boolean", "null"]},
+                "kosher": {"type": ["boolean", "null"]},
+                "gluten_free": {"type": ["boolean", "null"]},
+                "dairy_free": {"type": ["boolean", "null"]},
+                "diabetic": {"type": ["boolean", "null"]},
+                "low_sodium": {"type": ["boolean", "null"]},
+                "pureed": {"type": ["boolean", "null"]},
+                "fortified": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            },
+            "meal_services": {
+              "type": "object",
+              "properties": {
+                "choice_of_menu": {"type": ["boolean", "null"]},
+                "fresh_cooked": {"type": ["boolean", "null"]},
+                "chef_on_site": {"type": ["boolean", "null"]},
+                "special_occasions": {"type": ["boolean", "null"]},
+                "dining_room": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            },
+            "food_standards": {
+              "type": "object",
+              "properties": {
+                "food_hygiene_rating": {
+                  "type": ["integer", "null"],
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "nutritional_assessment": {"type": ["boolean", "null"]},
+                "hydration_monitoring": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "building_and_facilities": {
+          "type": "object",
+          "description": "Building features - maps to flat boolean fields + building_info JSONB - LIMITED IN CQC!",
+          "properties": {
+            "wheelchair_access": {"type": ["boolean", "null"], "description": "NOT IN CQC!"},
+            "ensuite_rooms": {"type": ["boolean", "null"], "description": "NOT IN CQC!"},
+            "secure_garden": {"type": ["boolean", "null"], "description": "NOT IN CQC!"},
+            "wifi_available": {"type": ["boolean", "null"], "description": "NOT IN CQC!"},
+            "parking_onsite": {"type": ["boolean", "null"], "description": "NOT IN CQC!"},
+            "building_details": {
+              "type": "object",
+              "description": "Additional building info - maps to building_info JSONB - NOT IN CQC!",
+              "properties": {
+                "purpose_built": {"type": ["boolean", "null"]},
+                "number_of_floors": {"type": ["integer", "null"]},
+                "number_of_rooms": {"type": ["integer", "null"]},
+                "number_of_ensuite_rooms": {"type": ["integer", "null"]},
+                "lift_available": {"type": ["boolean", "null"]},
+                "infection_control": {
+                  "type": "object",
+                  "properties": {
+                    "air_filtration": {"type": ["boolean", "null"]},
+                    "sterilisation_devices": {"type": ["boolean", "null"]},
+                    "visitor_screening": {"type": ["boolean", "null"]},
+                    "staff_training": {"type": ["boolean", "null"]},
+                    "independent_assessments": {"type": ["boolean", "null"]},
+                    "other": {"type": "array", "items": {"type": "string"}}
+                  },
+                  "additionalProperties": false
+                },
+                "sustainability": {
+                  "type": "object",
+                  "properties": {
+                    "sustainability_badge": {"type": ["boolean", "null"]},
+                    "reduced_plastic_use": {"type": ["boolean", "null"]},
+                    "chp_system": {"type": ["boolean", "null"]},
+                    "other": {"type": "array", "items": {"type": "string"}}
+                  },
+                  "additionalProperties": false
+                },
+                "other_facilities": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "activities": {
+          "type": "object",
+          "description": "Activities - maps to activities JSONB (hierarchical) - NOT IN CQC!",
+          "properties": {
+            "activities_list": {
+              "type": "array",
+              "items": {"type": "string"},
+              "uniqueItems": true
+            },
+            "one_to_one_activities": {"type": ["boolean", "null"]},
+            "group_activities": {"type": ["boolean", "null"]},
+            "specific_activities": {
+              "type": "object",
+              "properties": {
+                "animal_petting": {"type": ["boolean", "null"]},
+                "arts_crafts": {"type": ["boolean", "null"]},
+                "bingo": {"type": ["boolean", "null"]},
+                "exercise_class": {"type": ["boolean", "null"]},
+                "gardening": {"type": ["boolean", "null"]},
+                "music_therapy": {"type": ["boolean", "null"]},
+                "religious_services": {"type": ["boolean", "null"]},
+                "reminiscence": {"type": ["boolean", "null"]},
+                "yoga": {"type": ["boolean", "null"]},
+                "other": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "staff_information": {
+          "type": "object",
+          "description": "Staff info - maps to staff_information JSONB - NOT IN CQC!",
+          "properties": {
+            "registered_manager": {
+              "type": ["string", "null"],
+              "description": "NOTE: Not stored in DB v2.2 flat field (removed). Can store in JSONB if needed."
+            },
+            "staff_ratio": {"type": ["string", "null"]},
+            "nurse_on_duty": {"type": ["boolean", "null"]},
+            "specialist_staff": {"type": "array", "items": {"type": "string"}}
+          },
+          "additionalProperties": false
+        },
+        "reviews": {
+          "type": "object",
+          "description": "Reviews - maps to review_* flat fields + reviews_detailed JSONB - NOT IN CQC!",
+          "properties": {
+            "review_average_score": {
+              "type": ["number", "null"],
+              "minimum": 0,
+              "maximum": 5
+            },
+            "review_count": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            },
+            "google_rating": {
+              "type": ["number", "null"],
+              "minimum": 0,
+              "maximum": 5
+            },
+            "review_summary": {
+              "type": ["string", "null"],
+              "maxLength": 500
+            }
+          },
+          "additionalProperties": false
+        },
+        "media": {
+          "type": "object",
+          "description": "Media content - maps to media JSONB - NOT IN CQC!",
+          "properties": {
+            "images": {"type": "array", "items": {"type": "string"}},
+            "has_virtual_tour": {"type": ["boolean", "null"]},
+            "video_url": {"type": ["string", "null"]}
+          },
+          "additionalProperties": false
+        },
+        "accreditations": {
+          "type": "object",
+          "description": "Certifications - maps to accreditations JSONB - NOT IN CQC!",
+          "properties": {
+            "accreditations_list": {"type": "array", "items": {"type": "string"}},
+            "quality_marks": {"type": "array", "items": {"type": "string"}},
+            "certifications": {"type": "array", "items": {"type": "string"}}
+          },
+          "additionalProperties": false
+        },
+        "extraction_metadata": {
+          "type": "object",
+          "description": "Extraction quality metadata",
+          "properties": {
+            "extraction_confidence": {
+              "type": "string",
+              "description": "Overall confidence level",
+              "enum": ["high", "medium", "low"]
+            },
+            "critical_fields_found": {
+              "type": "array",
+              "description": "List of critical fields successfully extracted",
+              "items": {"type": "string"}
+            },
+            "critical_fields_missing": {
+              "type": "array",
+              "description": "List of critical fields missing (for review)",
+              "items": {"type": "string"}
+            },
+            "sections_identified": {
+              "type": "array",
+              "description": "Sections successfully processed",
+              "items": {"type": "string"}
+            },
+            "data_quality_notes": {
+              "type": ["string", "null"],
+              "description": "Notes about extraction issues or quality concerns",
+              "maxLength": 500
+            },
+            "data_quality_score": {
+              "type": ["integer", "null"],
+              "description": "Automated quality score 0-100. Scoring: Critical(40), Pricing(20), Medical(15), Other(25)",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "is_dormant": {
+              "type": ["boolean", "null"],
+              "description": "Home appears closed/dormant (no pricing + no phone OR 'closed' text)"
+            }
+          },
+          "required": ["extraction_confidence"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "source_metadata",
+        "identity",
+        "contact",
+        "location",
+        "capacity",
+        "care_services",
+        "pricing",
+        "funding",
+        "medical_specialisms",
+        "dietary_options",
+        "building_and_facilities",
+        "activities",
+        "staff_information",
+        "reviews",
+        "media",
+        "accreditations",
+        "extraction_metadata"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
+
