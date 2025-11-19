@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Calculator - Locations Table</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 24px;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        thead {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+        }
+        
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .band {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .band-A { background: #d4edda; color: #155724; }
+        .band-B { background: #d1ecf1; color: #0c5460; }
+        .band-C { background: #fff3cd; color: #856404; }
+        .band-D { background: #f8d7da; color: #721c24; }
+        .band-E { background: #f5c6cb; color: #721c24; }
+        
+        .price {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .gap-positive {
+            color: #dc3545;
+        }
+        
+        .gap-negative {
+            color: #28a745;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 Care Homes Pricing - All Locations</h1>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label>Care Type</label>
+                <select id="careType">
+                    <option value="">All</option>
+                    <option value="residential">Residential</option>
+                    <option value="nursing">Nursing</option>
+                    <option value="residential_dementia">Residential Dementia</option>
+                    <option value="nursing_dementia">Nursing Dementia</option>
+                    <option value="respite">Respite</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Region</label>
+                <select id="region">
+                    <option value="">All</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Affordability Band</label>
+                <select id="band">
+                    <option value="">All</option>
+                    <option value="A">A - Excellent</option>
+                    <option value="B">B - Good</option>
+                    <option value="C">C - Fair</option>
+                    <option value="D">D - Premium</option>
+                    <option value="E">E - Very Expensive</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Min Fair Cost (£/week)</label>
+                <input type="number" id="minFairCost" placeholder="Min">
+            </div>
+            
+            <div class="filter-group">
+                <label>Max Fair Cost (£/week)</label>
+                <input type="number" id="maxFairCost" placeholder="Max">
+            </div>
+        </div>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat">
+                <span class="stat-value" id="totalLocations">0</span>
+                <span class="stat-label">Total Locations</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="avgFairCost">£0</span>
+                <span class="stat-label">Avg Fair Cost</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="avgPrivate">£0</span>
+                <span class="stat-label">Avg Private</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <div id="loading" class="loading">Loading data...</div>
+            <table id="pricingTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Local Authority</th>
+                        <th>Region</th>
+                        <th>Care Type</th>
+                        <th>Fair Cost (£/week)</th>
+                        <th>Private Avg (£/week)</th>
+                        <th>Gap</th>
+                        <th>Gap %</th>
+                        <th>Band</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8001/api/pricing';
+        
+        let allData = [];
+        
+        async function loadRegions() {
+            try {
+                const response = await fetch(`${API_BASE}/regions`);
+                const data = await response.json();
+                const select = document.getElementById('region');
+                data.regions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = region;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load regions:', error);
+            }
+        }
+        
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('pricingTable');
+            const errorDiv = document.getElementById('error');
+            
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            errorDiv.style.display = 'none';
+            
+            try {
+                const params = new URLSearchParams();
+                
+                const careType = document.getElementById('careType').value;
+                if (careType) params.append('care_type', careType);
+                
+                const region = document.getElementById('region').value;
+                if (region) params.append('region', region);
+                
+                const band = document.getElementById('band').value;
+                if (band) params.append('band', band);
+                
+                const minFairCost = document.getElementById('minFairCost').value;
+                if (minFairCost) params.append('min_fair_cost', minFairCost);
+                
+                const maxFairCost = document.getElementById('maxFairCost').value;
+                if (maxFairCost) params.append('max_fair_cost', maxFairCost);
+                
+                const response = await fetch(`${API_BASE}/locations?${params}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                allData = data.data;
+                
+                renderTable(allData);
+                updateStats(allData);
+                
+                loading.style.display = 'none';
+                table.style.display = 'table';
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                errorDiv.textContent = `Error loading data: ${error.message}`;
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                const fairCost = row.fair_cost_lower_bound_gbp 
+                    ? `£${row.fair_cost_lower_bound_gbp.toFixed(2)}` 
+                    : 'N/A';
+                
+                const gapClass = row.fair_cost_gap_gbp >= 0 ? 'gap-positive' : 'gap-negative';
+                const gapSign = row.fair_cost_gap_gbp >= 0 ? '+' : '';
+                
+                tr.innerHTML = `
+                    <td>${row.local_authority}</td>
+                    <td>${row.region}</td>
+                    <td>${row.care_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
+                    <td class="price">${fairCost}</td>
+                    <td class="price">£${row.private_average_gbp.toFixed(2)}</td>
+                    <td class="${gapClass}">${gapSign}£${row.fair_cost_gap_gbp.toFixed(2)}</td>
+                    <td class="${gapClass}">${gapSign}${row.fair_cost_gap_percent.toFixed(1)}%</td>
+                    <td><span class="band band-${row.affordability_band}">${row.affordability_band}</span></td>
+                    <td>${row.band_confidence_percent}%</td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function updateStats(data) {
+            const stats = document.getElementById('stats');
+            if (data.length === 0) {
+                stats.style.display = 'none';
+                return;
+            }
+            
+            stats.style.display = 'flex';
+            
+            document.getElementById('totalLocations').textContent = data.length;
+            
+            const fairCosts = data.filter(r => r.fair_cost_lower_bound_gbp).map(r => r.fair_cost_lower_bound_gbp);
+            const avgFairCost = fairCosts.length > 0 
+                ? fairCosts.reduce((a, b) => a + b, 0) / fairCosts.length 
+                : 0;
+            document.getElementById('avgFairCost').textContent = `£${avgFairCost.toFixed(0)}`;
+            
+            const avgPrivate = data.reduce((sum, r) => sum + r.private_average_gbp, 0) / data.length;
+            document.getElementById('avgPrivate').textContent = `£${avgPrivate.toFixed(0)}`;
+        }
+        
+        // Event listeners
+        document.getElementById('careType').addEventListener('change', loadData);
+        document.getElementById('region').addEventListener('change', loadData);
+        document.getElementById('band').addEventListener('change', loadData);
+        document.getElementById('minFairCost').addEventListener('input', loadData);
+        document.getElementById('maxFairCost').addEventListener('input', loadData);
+        
+        // Initial load
+        loadRegions().then(() => loadData());
+    </script>
+</body>
+</html>
+

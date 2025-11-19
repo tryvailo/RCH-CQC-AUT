@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Calculator Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <h1>🏠 Pricing Calculator - Locations Table</h1>
+    <div id="status"></div>
+    <div id="filters">
+        <label>Care Type: <select id="careType"><option value="">All</option><option value="residential">Residential</option><option value="nursing">Nursing</option></select></label>
+        <label>Region: <select id="region"><option value="">All</option></select></label>
+        <button onclick="loadData()">Load Data</button>
+    </div>
+    <div id="stats"></div>
+    <table id="table">
+        <thead><tr><th>Local Authority</th><th>Region</th><th>Care Type</th><th>Fair Cost</th><th>Private Avg</th><th>Band</th></tr></thead>
+        <tbody id="tbody"></tbody>
+    </table>
+    
+    <script>
+        const API_BASE = 'http://localhost:8001/api/pricing';
+        
+        async function checkAPI() {
+            try {
+                const res = await fetch(API_BASE + '/regions');
+                const data = await res.json();
+                document.getElementById('status').innerHTML = '<div class="status success">✅ API Connected! Regions: ' + data.regions.length + '</div>';
+                const select = document.getElementById('region');
+                data.regions.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = r;
+                    select.appendChild(opt);
+                });
+                return true;
+            } catch(e) {
+                document.getElementById('status').innerHTML = '<div class="status error">❌ API Connection Error: ' + e.message + '</div>';
+                return false;
+            }
+        }
+        
+        async function loadData() {
+            const careType = document.getElementById('careType').value;
+            const region = document.getElementById('region').value;
+            const params = new URLSearchParams();
+            if(careType) params.append('care_type', careType);
+            if(region) params.append('region', region);
+            
+            try {
+                const res = await fetch(API_BASE + '/locations?' + params);
+                const data = await res.json();
+                
+                document.getElementById('stats').innerHTML = '<p><strong>Total Locations: ' + data.total_locations + '</strong></p>';
+                
+                const tbody = document.getElementById('tbody');
+                tbody.innerHTML = '';
+                data.data.slice(0, 50).forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.local_authority}</td>
+                        <td>${row.region}</td>
+                        <td>${row.care_type}</td>
+                        <td>${row.fair_cost_lower_bound_gbp ? '£' + row.fair_cost_lower_bound_gbp.toFixed(2) : 'N/A'}</td>
+                        <td>£${row.private_average_gbp.toFixed(2)}</td>
+                        <td><span style="background:#d4edda;padding:2px 6px;border-radius:3px">${row.affordability_band}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch(e) {
+                document.getElementById('status').innerHTML = '<div class="status error">❌ Data Loading Error: ' + e.message + '</div>';
+            }
+        }
+        
+        checkAPI().then(() => loadData());
+    </script>
+</body>
+</html>

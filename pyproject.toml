@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pricing-calculator"
+version = "1.0.0"
+description = "Pricing calculator module for RightCareHome UK care homes matching service"
+readme = "src/pricing_calculator/README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "RightCareHome", email = "info@rightcarehome.co.uk"}
+]
+keywords = ["care-homes", "pricing", "affordability", "uk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "httpx>=0.24.0",
+    "beautifulsoup4>=4.12.0",
+    "selectolax>=0.3.0",
+    "pydantic[email]>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "structlog>=23.0.0",
+    "redis>=5.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "apscheduler>=3.10.0",
+    "streamlit>=1.28.0",
+    "streamlit-folium>=0.15.0",
+    "folium>=0.15.0",
+    "psycopg2-binary>=2.9.0",
+    "redis>=5.0.0",
+    "jinja2>=3.1.0",
+    "weasyprint>=60.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "requests-mock>=1.11.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/rightcarehome/pricing-calculator"
+Documentation = "https://github.com/rightcarehome/pricing-calculator#readme"
+Repository = "https://github.com/rightcarehome/pricing-calculator"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/pricing_calculator/tests", "src/data_ingestion/tests", "src/postcode_resolver/tests", "src/pricing_core/tests", "src/funding_calculator/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=src/pricing_calculator",
+    "--cov=src/data_ingestion",
+    "--cov=src/postcode_resolver",
+    "--cov=src/pricing_core",
+    "--cov=src/funding_calculator",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=95",
+    "-v"
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311"]
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]  # Line too long (handled by black)
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+

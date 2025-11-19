@@ -1,0 +1,30 @@
+FUNDING ELIGIBILITY REPORT - TEASER
+====================================
+
+Generated: {{ calculation_date }}
+
+CHC ELIGIBILITY: {{ chc_eligibility.probability_percent }}%
+{% if chc_eligibility.is_likely_eligible %}
+✓ Likely Eligible for Continuing Healthcare funding
+{% else %}
+⚠ Review Required - May qualify with additional evidence
+{% endif %}
+
+POTENTIAL ANNUAL SAVINGS: £{{ "{:,.0f}".format(savings.annual_gbp) }}
+5-YEAR SAVINGS: £{{ "{:,.0f}".format(savings.five_year_gbp) }}
+
+LOCAL AUTHORITY SUPPORT:
+- Top-up Probability: {{ la_support.top_up_probability_percent }}%
+- Full Support Probability: {{ la_support.full_support_probability_percent }}%
+
+DEFERRED PAYMENT AGREEMENT:
+{% if dpa_eligibility.is_eligible %}
+✓ Eligible - Property can be disregarded
+{% else %}
+✗ Not Eligible
+{% endif %}
+
+---
+Get full detailed report with complete analysis and recommendations.
+Visit: https://rightcarehome.co.uk/funding-report
+

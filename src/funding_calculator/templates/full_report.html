@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funding Eligibility Report - {{ calculation_date }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+        .metric {
+            display: inline-block;
+            margin: 10px 20px 10px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .recommendations {
+            list-style: none;
+            padding: 0;
+        }
+        .recommendations li {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 4px solid #667eea;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Funding Eligibility Report</h1>
+        <p>Generated: {{ calculation_date }}</p>
+    </div>
+
+    <div class="section">
+        <h2>CHC Eligibility Assessment</h2>
+        <div class="metric">
+            <div class="metric-value">{{ chc_eligibility.probability_percent }}%</div>
+            <div class="metric-label">CHC Probability</div>
+        </div>
+        {% if chc_eligibility.is_likely_eligible %}
+        <div class="success">
+            <strong>Likely Eligible</strong> - Strong case for Continuing Healthcare funding
+        </div>
+        {% else %}
+        <div class="warning">
+            <strong>Review Required</strong> - May qualify with additional evidence
+        </div>
+        {% endif %}
+        <p><strong>Reasoning:</strong> {{ chc_eligibility.reasoning }}</p>
+        <p><strong>Threshold Category:</strong> {{ chc_eligibility.threshold_category|title }}</p>
+        {% if chc_eligibility.key_factors %}
+        <p><strong>Key Factors:</strong></p>
+        <ul>
+            {% for factor in chc_eligibility.key_factors %}
+            <li>{{ factor }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <h2>Local Authority Support</h2>
+        <div class="metric">
+            <div class="metric-value">{{ la_support.top_up_probability_percent }}%</div>
+            <div class="metric-label">Top-up Probability</div>
+        </div>
+        <div class="metric">
+            <div class="metric-value">{{ la_support.full_support_probability_percent }}%</div>
+            <div class="metric-label">Full Support Probability</div>
+        </div>
+        <p><strong>Capital Assessed:</strong> £{{ "{:,.2f}".format(la_support.capital_assessed) }}</p>
+        <p><strong>Tariff Income:</strong> £{{ "{:,.2f}".format(la_support.tariff_income_gbp_week) }}/week</p>
+        {% if la_support.weekly_contribution %}
+        <p><strong>Weekly Contribution:</strong> £{{ "{:,.2f}".format(la_support.weekly_contribution) }}</p>
+        {% endif %}
+        <p><strong>Reasoning:</strong> {{ la_support.reasoning }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Deferred Payment Agreement</h2>
+        {% if dpa_eligibility.is_eligible %}
+        <div class="success">
+            <strong>Eligible</strong> - Property can be disregarded from means test
+        </div>
+        {% else %}
+        <div class="warning">
+            <strong>Not Eligible</strong>
+        </div>
+        {% endif %}
+        <p><strong>Reasoning:</strong> {{ dpa_eligibility.reasoning }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Potential Savings</h2>
+        <div class="highlight">
+            <div class="metric">
+                <div class="metric-value">£{{ "{:,.0f}".format(savings.annual_gbp) }}</div>
+                <div class="metric-label">Annual Savings</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">£{{ "{:,.0f}".format(savings.five_year_gbp) }}</div>
+                <div class="metric-label">5-Year Savings</div>
+            </div>
+            {% if savings.lifetime_gbp %}
+            <div class="metric">
+                <div class="metric-value">£{{ "{:,.0f}".format(savings.lifetime_gbp) }}</div>
+                <div class="metric-label">Lifetime Estimate</div>
+            </div>
+            {% endif %}
+        </div>
+        <p><strong>Weekly Savings:</strong> £{{ "{:,.2f}".format(savings.weekly_savings) }}</p>
+    </div>
+
+    {% if recommendations %}
+    <div class="section">
+        <h2>Recommendations</h2>
+        <ul class="recommendations">
+            {% for rec in recommendations %}
+            <li>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>This report is based on NHS National Framework 2022 (current 2025), MSIF 2025-2026, and Care Act 2014.</p>
+        <p>Generated by RightCareHome Funding Eligibility Calculator</p>
+    </div>
+</body>
+</html>
+
